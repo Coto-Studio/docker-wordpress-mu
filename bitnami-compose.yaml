@@ -1,0 +1,48 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# Here the instructions define your application as a service called "app".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+services:
+  mariadb:
+    image: docker.io/bitnami/mariadb:latest
+    volumes:
+      - db:/bitnami/mariadb
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_PASSWORD=examplepass
+      - MARIADB_USER=exampleuser
+      - MARIADB_DATABASE=exampledb
+  wordpress:
+    image: docker.io/bitnami/wordpress
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - wordpress:/bitnami/wordpress
+    depends_on:
+      - mariadb
+    environment:
+      # - ALLOW_EMPTY_PASSWORD=yes
+      - WORDPRESS_DATABASE_PASSWORD=examplepass
+      - WORDPRESS_DATABASE_HOST=mariadb
+      - WORDPRESS_DATABASE_PORT_NUMBER=3306
+      - WORDPRESS_DATABASE_USER=exampleuser
+      - WORDPRESS_DATABASE_NAME=exampledb
+      - WORDPRESS_BLOG_NAME='Test Site'
+      - WORDPRESS_USERNAME=testuser
+      - WORDPRESS_PASSWORD=testpass
+      - WORDPRESS_EMAIL=test@example.com
+      - WORDPRESS_FIRST_NAME=Test
+      - WORDPRESS_LAST_NAME=User
+      - WORDPRESS_ENABLE_MULTISITE=yes
+      - WORDPRESS_MULTISITE_NETWORK_TYPE=subdomain
+      - WORDPRESS_MULTISITE_HOST=example.com
+      - WORDPRESS_MULTISITE_FILEUPLOAD_MAXK=128000
+volumes:
+  wordpress:
+  db:
