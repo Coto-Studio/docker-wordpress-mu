@@ -8,45 +8,80 @@
 # database or a cache. For examples, see the Awesome Compose repository:
 # https://github.com/docker/awesome-compose
 services:
-  app:
-    build:
-      context: .
-      target: final
-    # If your application exposes a port, uncomment the following lines and change
-    # the port numbers as needed. The first number is the host port and the second
-    # is the port inside the container.
-    # ports:
-    #   - 8080:8080
-
-    # The commented out section below is an example of how to define a PostgreSQL
-    # database that your application can use. `depends_on` tells Docker Compose to
-    # start the database before your application. The `db-data` volume persists the
-    # database data between container restarts. The `db-password` secret is used
-    # to set the database password. You must create `db/password.txt` and add
-    # a password of your choosing to it before running `docker compose up`.
-    #     depends_on:
-    #       db:
-    #         condition: service_healthy
-    #   db:
-    #     image: postgres
-    #     restart: always
-    #     user: postgres
-    #     secrets:
-    #       - db-password
-    #     volumes:
-    #       - db-data:/var/lib/postgresql/data
-    #     environment:
-    #       - POSTGRES_DB=example
-    #       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
-    #     expose:
-    #       - 5432
-    #     healthcheck:
-    #       test: [ "CMD", "pg_isready" ]
-    #       interval: 10s
-    #       timeout: 5s
-    #       retries: 5
-    # volumes:
-    #   db-data:
-    # secrets:
-    #   db-password:
-    #     file: db/password.txt
+  wordpress:
+    build: .
+    ports:
+      - 80:80
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: exampleuser
+      WORDPRESS_DB_PASSWORD: examplepass
+      WORDPRESS_DB_NAME: exampledb
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_CONFIG_EXTRA: |
+        /* WP Memory Limit */
+        define('WP_MEMORY_LIMIT', '128M');
+        /* Enable W3 Total Cache */
+        define('WP_CACHE', true);
+        /* Multisite */
+        define('WP_ALLOW_MULTISITE', true );
+      #   define('MULTISITE', true);
+      #   define('SUBDOMAIN_INSTALL', false);
+      #   define('DOMAIN_CURRENT_SITE', '127.0.0.1');
+      #   define('PATH_CURRENT_SITE', '/');
+      #   define('SITE_ID_CURRENT_SITE', 1);
+      #   define('BLOG_ID_CURRENT_SITE', 1);
+      #   define('ADMIN_COOKIE_PATH', '/');
+      #   define('COOKIEPATH', '');
+      #   define('SITECOOKIEPATH', '');
+      #   /* WP Memory Limit */
+      #   define('WP_MEMORY_LIMIT', '128M');
+      #   /* Enable W3 Total Cache */
+      #   define('WP_CACHE', true);
+    volumes:
+      - wordpress:/var/www/html
+      - ./themes:/var/www/html/wp-content/themes/
+      - ./plugins:/var/www/html/wp-content/plugins/
+      - ./config-files/.htaccess:/var/www/html/.htaccess
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: mariadb
+    restart: always
+    environment:
+      MARIADB_DATABASE: exampledb
+      MARIADB_USER: exampleuser
+      MARIADB_PASSWORD: examplepass
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      interval: 30s
+      retries: 3
+      test:
+        [
+          "CMD",
+          "healthcheck.sh",
+          "--su-mysql",
+          "--connect",
+          "--innodb_initialized",
+        ]
+      timeout: 30s
+  # db-mysql:
+  #   image: mysql:8
+  #   restart: always
+  #   environment:
+  #     MYSQL_DATABASE: exampledb
+  #     MYSQL_USER: exampleuser
+  #     MYSQL_PASSWORD: examplepass
+  #     MYSQL_RANDOM_ROOT_PASSWORD: "1"
+  #   volumes:
+  #     - db:/var/lib/mysql
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     timeout: 20s
+  #     retries: 10
+volumes:
+  wordpress:
+  db:
